@@ -50,12 +50,10 @@ DEFINE_PROFILE(wall_slip_navier_stationnary, thread, position)
 		vf[1]=F_V(f,thread);
 		vf[2]=F_W(f,thread);
 		
-		//Centroids calculation to calculate the wall velocity
-		F_CENTROID(x, f, thread);
-		
 		//Fluid velocity
 		NV_V_VS(vfn, =,nulle,+,An,*,(NV_DOT(vf, An)));
 		NV_VV(vslip, =, vf, -, vfn);
+;
 		
 		//Shear stress calculation
 		NV_V_VS(tau, =,nulle,+,vslip,*,beta1);
@@ -136,7 +134,6 @@ DEFINE_PROFILE(wall_slip_navier_moving, thread, position)
 	real NV_VEC(vreln);
 	real nulle[3]={0.0,0.0,0.0};
 	real NV_VEC(An);
-	int zone_ID= THREAD_ID(thread); 
 	real beta1;
 	beta1=(beta1_adim*mu)/href;
 
