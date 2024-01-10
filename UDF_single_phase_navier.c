@@ -80,7 +80,6 @@ DEFINE_PROFILE(wall_slip_navier_stationnary, thread, position)
 		}
 	}
 	end_f_loop(f,thread)
-	}
 	//End of the profile definition
 	#endif
 }
@@ -197,4 +196,5 @@ DEFINE_PROFILE(wall_slip_navier_moving, thread, position)
 		}
 	}
 	end_f_loop(f,thread)
+	#endif
 }
