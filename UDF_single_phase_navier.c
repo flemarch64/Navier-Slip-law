@@ -4,11 +4,11 @@
 #include "sg.h"
 
 
-DEFINE_PROFILE(wall_slip_navier, thread, position)
+DEFINE_PROFILE(wall_slip_navier_stationnary, thread, position)
 {
-	#if RP_NODE
+	//UDF to calculate the shear stress by implementing the Navier Slip law at a stationary wall
 	
-	//UDF to calculate the shear stress corresponding to a roller rotating at omega
+	#if RP_NODE
 	
 	//Schemes variables to be employed
 	//Under relaxation factor
@@ -16,7 +16,89 @@ DEFINE_PROFILE(wall_slip_navier, thread, position)
 	
 	//Non-dimensional Slip coefficient for the liquid to be tested
 	real beta1_adim=RP_Get_Real("beta1_adim");
-	real beta2_adim=RP_Get_Real("beta2_adim");
+	
+	//beta dimensionalisation, with viscosity and href
+	real mu=RP_Get_Real("mu");
+	real href=RP_Get_Real("h_ref");
+	//End of the schemes variables definition
+	
+	//Profile definition
+	face_t f;
+	real x[ND_ND];
+	real NV_VEC(vf);
+	real NV_VEC(vfn);
+	real NV_VEC(Area);
+	real NV_VEC(tau);
+	real NV_VEC(tau2);
+	real NV_VEC(vslip);
+	real NV_VEC(vslip2);
+	real NV_VEC(vrel);
+	real NV_VEC(vreln);
+	real nulle[3]={0.0,0.0,0.0};
+	real NV_VEC(An);
+	real beta1;
+	beta1=(beta1_adim*mu)/href;
+
+	begin_f_loop(f, thread){
+		//Area vector to get the normal vector components
+		F_AREA(Area,f,thread);
+		
+		//Normalisation
+		NV_V_VS(An,=,nulle,+,Area,*,(1/NV_MAG(Area)));
+		
+		/* Get the velocities of the fluid in the boundary */
+		vf[0]=F_U(f,thread);
+		vf[1]=F_V(f,thread);
+		vf[2]=F_W(f,thread);
+		
+		//Centroids calculation to calculate the wall velocity
+		F_CENTROID(x, f, thread);
+		
+		//Fluid velocity
+		NV_V_VS(vfn, =,nulle,+,An,*,(NV_DOT(vf, An)));
+		NV_VV(vslip, =, vf, -, vfn);
+		
+		//Shear stress calculation
+		NV_V_VS(tau, =,nulle,+,vslip,*,beta1);
+		
+		//Switch case to assign the shear stress components in the GUI, underelaxation
+		switch(position){
+			case 0:
+				tau2[0]=(1.0-alfa_relax)*F_UDMI(f,thread,0)+alfa_relax*tau[0];
+				F_UDMI(f,thread,0)=tau2[0];
+				F_PROFILE(f, thread, position) = tau2[0];
+				break;
+			case 1:
+				tau2[1]=(1.0-alfa_relax)*F_UDMI(f,thread,1)+alfa_relax*tau[1];
+				F_UDMI(f,thread,1)=tau2[1];
+				F_PROFILE(f, thread, position) = tau2[1];
+				break;
+			case 2:
+				tau2[2]=(1.0-alfa_relax)*F_UDMI(f,thread,2)+alfa_relax*tau[2];
+				F_UDMI(f,thread,2)=tau2[2];
+				F_PROFILE(f, thread, position) = tau2[2];
+				break;
+		}
+	}
+	end_f_loop(f,thread)
+	}
+	//End of the profile definition
+	#endif
+}
+
+
+DEFINE_PROFILE(wall_slip_navier_moving, thread, position)
+{
+	#if RP_NODE
+	
+	//UDF to calculate the shear stress by implementing the Navier slip law for a moving wall
+	
+	//Schemes variables to be employed
+	//Under relaxation factor
+	real alfa_relax=RP_Get_Real("alfa_relax");
+	
+	//Non-dimensional Slip coefficient for the liquid to be tested
+	real beta1_adim=RP_Get_Real("beta1_adim");
 	
 	//Definition of a wall movement, general case
 	int movement_type;
@@ -56,13 +138,12 @@ DEFINE_PROFILE(wall_slip_navier, thread, position)
 	real NV_VEC(vrel);
 	real NV_VEC(vreln);
 	real nulle[3]={0.0,0.0,0.0};
-	real dx[3]={1.0,0.0,0.0};
 	real NV_VEC(An);
 	int zone_ID= THREAD_ID(thread); 
 	real beta1;
-	real beta2;
 	beta1=(beta1_adim*mu)/href;
-	beta2=(beta2_adim*mu)/href;
+
+	//If to take into account the moving wall in the zone ID
 	begin_f_loop(f, thread){
 	
 		//Area vector to get the normal vector components
@@ -76,7 +157,7 @@ DEFINE_PROFILE(wall_slip_navier, thread, position)
 		vf[1]=F_V(f,thread);
 		vf[2]=F_W(f,thread);
 		
-		//Centroids calculation to calculate the wall velocity
+		//Centroids calculation to calculate the wall velocity in case of a rotating wall
 		F_CENTROID(x, f, thread);
 		
 		//Movement type, wall velocity calculation
@@ -90,46 +171,32 @@ DEFINE_PROFILE(wall_slip_navier, thread, position)
 				break;
 		}
 		
-		//If to take into account the moving wall in the zone ID
-		if(zone_ID==10){
-			//Relative velocity (normal component)
-			NV_VV(vrel, =, vf, -, vw);
-			NV_V_VS(vreln, =,nulle,+,An,*,(NV_DOT(vrel, An)));
-			NV_VV(vslip, =, vrel, -, vreln);
-			//Tangential component to quit
-		    NV_V_VS(vslip2, =,vslip,-,dx,*,(NV_DOT(vslip, dx)));
-			//Shear stress calculation
-		    NV_V_VS(tau, =,nulle,+,vslip2,*,beta1);
-		}else{
-			//Fluid velocity
-			NV_V_VS(vfn, =,nulle,+,An,*,(NV_DOT(vf, An)));
-			NV_VV(vslip, =, vf, -, vfn);
-			//Tangential component to quit
-		    NV_V_VS(vslip2, =,vslip,-,dx,*,(NV_DOT(vslip, dx)));
-			//Shear stress calculation
-		    NV_V_VS(tau, =,nulle,+,vslip2,*,beta2);
-		}
+		//Relative velocity (normal component)
+		NV_VV(vrel, =, vf, -, vw);
+		NV_V_VS(vreln, =,nulle,+,An,*,(NV_DOT(vrel, An)));
+		NV_VV(vslip, =, vrel, -, vreln);
+
+		//Shear stress calculation
+		NV_V_VS(tau, =,nulle,+,vslip2,*,beta1);
 	
 		//Switch case to assign the shear stress components in the GUI, underelaxation
 		switch(position){
 			case 0:
 				tau2[0]=(1.0-alfa_relax)*F_UDMI(f,thread,0)+alfa_relax*tau[0];
-			    F_UDMI(f,thread,0)=tau2[0];
+				F_UDMI(f,thread,0)=tau2[0];
 				F_PROFILE(f, thread, position) = tau2[0];
 				break;
 			case 1:
-			    tau2[1]=(1.0-alfa_relax)*F_UDMI(f,thread,1)+alfa_relax*tau[1];
-			    F_UDMI(f,thread,1)=tau2[1];
+				tau2[1]=(1.0-alfa_relax)*F_UDMI(f,thread,1)+alfa_relax*tau[1];
+				F_UDMI(f,thread,1)=tau2[1];
 				F_PROFILE(f, thread, position) = tau2[1];
 				break;
 			case 2:
-			    tau2[2]=(1.0-alfa_relax)*F_UDMI(f,thread,2)+alfa_relax*tau[2];
-			    F_UDMI(f,thread,2)=tau2[2];
+				tau2[2]=(1.0-alfa_relax)*F_UDMI(f,thread,2)+alfa_relax*tau[2];
+				F_UDMI(f,thread,2)=tau2[2];
 				F_PROFILE(f, thread, position) = tau2[2];
 				break;
 		}
 	}
 	end_f_loop(f,thread)
-	//End of the profile definition
-	#endif
 }
