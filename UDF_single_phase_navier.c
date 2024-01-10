@@ -177,7 +177,7 @@ DEFINE_PROFILE(wall_slip_navier_moving, thread, position)
 		NV_VV(vslip, =, vrel, -, vreln);
 
 		//Shear stress calculation
-		NV_V_VS(tau, =,nulle,+,vslip2,*,beta1);
+		NV_V_VS(tau, =,nulle,+,vslip,*,beta1);
 	
 		//Switch case to assign the shear stress components in the GUI, underelaxation
 		switch(position){
