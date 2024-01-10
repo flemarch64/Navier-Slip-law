@@ -31,7 +31,6 @@ DEFINE_PROFILE(wall_slip_navier_stationnary, thread, position)
 	real NV_VEC(tau);
 	real NV_VEC(tau2);
 	real NV_VEC(vslip);
-	real NV_VEC(vslip2);
 	real NV_VEC(vrel);
 	real NV_VEC(vreln);
 	real nulle[3]={0.0,0.0,0.0};
@@ -134,7 +133,6 @@ DEFINE_PROFILE(wall_slip_navier_moving, thread, position)
 	real NV_VEC(tau);
 	real NV_VEC(tau2);
 	real NV_VEC(vslip);
-	real NV_VEC(vslip2);
 	real NV_VEC(vrel);
 	real NV_VEC(vreln);
 	real nulle[3]={0.0,0.0,0.0};
