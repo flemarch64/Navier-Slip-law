@@ -161,7 +161,7 @@ DEFINE_PROFILE(wall_slip_navier_moving, thread, position)
 				break;
 			case 1:
 				NV_V_VS(omega, =,nulle,+,rot_axis,*,rotational_velocity);
-				NV_CROSS(vw, x, omega);
+				NV_CROSS(vw, omega, x);
 				break;
 		}
 		
