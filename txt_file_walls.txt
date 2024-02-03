@@ -1,0 +1,3 @@
+ID, MovType, Vector_1_X, Vector_1_Y, Vector_1_Z, Vector_2_X, Vector_2_Y, Vector_2_Z, BetaAdim, Relax_factor, href
+(9, 0, 0, 0, 0, 0, 0, 0, 10.0, 1.0e-1, 1.0)
+(10, 0, 0, 0, 2.0, 0, 0, 0, 10.0, 1.0e-1, 1.0)
